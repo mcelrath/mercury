@@ -31,32 +31,36 @@ extern crate electrumx_client;
 extern crate hex;
 extern crate itertools;
 extern crate uuid;
+extern crate ecies;
 
 pub mod ecdsa;
 pub mod escrow;
 pub mod wallet;
 pub mod schnorr;
 pub mod state_entity;
+pub mod error;
 
 mod utilities;
 mod mocks;
 
-type Result<T> = std::result::Result<T, failure::Error>;
+type Result<T> = std::result::Result<T, error::CError>;
 
 #[derive(Debug, Clone)]
 pub struct ClientShim {
     pub client: reqwest::Client,
     pub auth_token: Option<String>,
     pub endpoint: String,
+    pub encryption_pubkey: Option<String>
 }
 
 impl ClientShim {
-    pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
+    pub fn new(endpoint: String, auth_token: Option<String>, encryption_pubkey: Option<String>) -> ClientShim {
         let client = reqwest::Client::new();
         ClientShim {
             client,
             auth_token,
             endpoint,
+            encryption_pubkey
         }
     }
 }

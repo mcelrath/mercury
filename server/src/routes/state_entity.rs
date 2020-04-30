@@ -2,7 +2,8 @@
 //!
 //! State Entity implementation
 
-use crate::util::build_tx_b;
+use crate::error::SEError;
+use crate::util::{build_tx_b, generate_keypair};
 use bitcoin::{ Address, Amount, OutPoint, TxIn };
 use bitcoin::hashes::sha256d;
 use bitcoin::util::bip143::SighashComponents;
@@ -16,6 +17,66 @@ use uuid::Uuid;
 use super::super::auth::jwt::Claims;
 use super::super::storage::db;
 use super::super::Config;
+
+use bitcoin::util::key::{ PublicKey, PrivateKey};
+
+const STATE_ENTITY_UUID: &str = "380af03d-ffc8-4144-a201-d383967190e4";
+
+// contains state entity data
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct StateEntity {
+    encryption_keypair: (PrivateKey, PublicKey)
+}
+
+impl StateEntity {
+    
+    pub fn new() -> StateEntity {
+            StateEntity{ encryption_keypair: generate_keypair()
+        }   
+    }
+
+    pub fn from_db(state: &State<Config>,
+        claim: &Claims) -> Result<Option<StateEntity>>{
+        // check authorisation id is in DB (and check password?)
+        db::get(
+            &state.db,
+            &claim.sub,
+            &STATE_ENTITY_UUID,
+            &StateEntityStruct::StateEntity)
+    }    
+    
+    pub fn insert_db(&self, 
+        state: &State<Config>,
+        claim: &Claims) -> Result<()>{
+        db::insert(
+            &state.db,
+            &claim.sub,
+            &STATE_ENTITY_UUID,
+            &StateEntityStruct::StateEntity,
+            &StateEntity{
+                encryption_keypair: self.encryption_keypair.clone()        
+            }
+        )?;
+        Ok(())
+    }
+
+    pub fn get_encryption_pubkey(&self) -> PublicKey {
+        self.encryption_keypair.1
+    }
+
+}
+
+//Database struct implementation for StateEntity
+#[derive(Debug)]
+pub enum StateEntityStruct {
+    StateEntity
+}
+
+impl db::MPCStruct for StateEntityStruct {
+    fn to_string(&self) -> String {
+        format!("StateEntity{:?}", self)
+    }
+}
 
 /// contains state chain id and data
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -43,12 +104,12 @@ pub enum StateChainStruct {
     SessionData,
     StateChain
 }
-
 impl db::MPCStruct for StateChainStruct {
     fn to_string(&self) -> String {
         format!("StateChain{:?}", self)
     }
 }
+
 
 /// Initiliase session
 ///     - Generate and return shared wallet ID
@@ -61,6 +122,9 @@ pub fn session_init(
     // generate shared wallet ID (user ID)
     let user_id = Uuid::new_v4().to_string();
 
+    // Verification/PoW/authoriation falied
+    // Err(SEError::AuthError)
+
     // create DB entry for newly generated ID signalling that user has passed some
     // verification. For now use ID as 'password' to interact with state entity
     db::insert(
@@ -72,22 +136,22 @@ pub fn session_init(
             id: user_id.clone(),
         }
     )?;
-
     Ok(Json(user_id))
 }
 
-/// Authenticate User
+/// check if user has passed authentication
 pub fn check_user_auth(
     state: &State<Config>,
     claim: &Claims,
     id: &String
-) -> Option<UserSession> {
+) -> Result<UserSession> {
     // check authorisation id is in DB (and check password?)
     db::get(
         &state.db,
         &claim.sub,
         &id,
         &StateChainStruct::UserSession).unwrap()
+    .ok_or(SEError::AuthError)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -110,12 +174,8 @@ pub fn deposit_first(
     deposit_msg: Json<DepositMessage1>,
 ) -> Result<Json<()>> {
     // auth user
-    let auth_ed = check_user_auth(&state, &claim, &id);
-    match auth_ed {
-        Some(_) => println!("ECDSA Keygen first message: Id {} found in DB.", id),
-        // fix to return Error. Currently return empty Result<Json<(String, party_one::KeyGenFirstMsg)>>
-        None => println!("deposit_first() auth error")
-    };
+    check_user_auth(&state, &claim, &id)?;
+
     // rebuild tx_b sig hash to verify co-sign will be signing the correct data
     let tx_b_txin = TxIn {
         previous_output: OutPoint {
@@ -166,4 +226,16 @@ pub fn deposit_first(
     )?;
 
     Ok(Json(()))
+}
+
+/// get encryption pubkey message
+///     - return the receiver pubkey for the state entity for ECIES encryption
+#[post("/state_entity/get_receiver_pubkey", format = "json")]
+pub fn get_receiver_pubkey(state: State<Config>,
+                            claim: Claims) -> Result<Json<PublicKey>> {
+        
+        match StateEntity::from_db(&state, &claim)? {
+            Some(se) => Ok(Json(se.get_encryption_pubkey())),
+            None => Err(format_err!("StateEntity not found in db"))
+        }
 }
