@@ -19,6 +19,8 @@ pub enum SEError {
     SigningError(String),
     /// Generic error from string error message
     Generic(String),
+    /// Object not found error
+    ObjectNotFoundError(String)
 }
 
 impl From<String> for SEError {
@@ -33,6 +35,7 @@ impl fmt::Display for SEError {
             SEError::Generic(ref e) => write!(f, "generic Error: {}", e),
             SEError::AuthError => write!(f,"User authorisation failed"),
             SEError::SigningError(ref e) => write!(f,"Signing Error: {}",e),
+            SEError::ObjectNotFoundError(ref e) => write!(f,"ObjectNotFoundError: {}",e),
         }
     }
 }

@@ -99,8 +99,8 @@ pub fn get_server() -> Rocket {
                 schnorr::keygen_third,
                 schnorr::sign,
                 state_entity::session_init,
-                state_entity::deposit_first,
-                state_entity::get_encryption_pub
+                state_entity::prepare_sign,
+                state_entity::get_encryption_pubkey
             ],
         )
         .manage(db_config)
