@@ -49,18 +49,16 @@ type Result<T> = std::result::Result<T, error::CError>;
 pub struct ClientShim {
     pub client: reqwest::Client,
     pub auth_token: Option<String>,
-    pub endpoint: String,
-    pub encryption_pubkey: Option<String>
+    pub endpoint: String
 }
 
 impl ClientShim {
-    pub fn new(endpoint: String, auth_token: Option<String>, encryption_pubkey: Option<String>) -> ClientShim {
+    pub fn new(endpoint: String, auth_token: Option<String>) -> ClientShim {
         let client = reqwest::Client::new();
         ClientShim {
             client,
             auth_token,
-            endpoint,
-            encryption_pubkey
+            endpoint
         }
     }
 }

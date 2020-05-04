@@ -1,29 +1,27 @@
 use extern crate ecies;
 use bitcoin::util::key::{ PublicKey, PrivateKey };
+use serde::{Serialize, Deserialize}
+use crate::server::util::generate_keypair;
 
 //Encrypted serialization/deserialization
-trait Encryptable:  std::clone::Clone, Serialize {
-    fn encrypt_with_pubkey(&self, pubkey: &PublicKey) -> Ok<EncryptedBytes>{
-        Ok(EncryptedBytes::from_static(&ecies::encrypt(pubkey.serialize(),&self.to_bytes())))
+trait Encryptable: Serialize, Deserialize{
+    fn to_encrypted_bytes(&self, pubkey: &PublicKey) -> Result<Vec<u8>>{
+        let serialized = serde_json::to_string(self).unwrap().as_bytes();
+        Ok(ecies::encrypt(&pubkey.serialize(), serialized.as_bytes()).unwrap());
     }
-}
 
-struct EncryptedBytes(Bytes);
-
-impl EncryptedBytes {
-    fn decrypt_with_privkey(&self, privkey: &PrivateKey) -> Ok<Bytes> {
-        Ok(Bytes::from(&ecies::decrypt(&privkey.serialize(), self.as_slice())?))
-    }
-}
-
-trait FromEncryptedBytes: Deserialize{
-    fn from_encrypted_bytes(&self, data: &EncryptedBytes, privkey: &PrivateKey) -> Result<Self>{
-        self.from_slice(data.decrypt_with_privkey(privkey)?)
+    fn from_encrypted_bytes(&self, privkey: &PrivateKey, ec: &[u8]) ->Result<Self>{
+        let serialized = String::from_utf8(ecies::decrypt(&privkey.serialize(), ec).unwrap())
+        let deserialized: Self = serde_json::from_str(&serialized).unwrap();
+        Ok(deserialized)
     }
 }
 
 #[derive(Encryptable)]
-struct EncryptableString(String);
+struct TestStruct {
+    firstItem: String,
+    secondItem: u32,
+}
 
 /// ecies library specific errors
 #[derive(Debug, Deserialize)]
@@ -70,7 +68,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encrypt_decrypt_string() {
+    fn test_encrypt_decrypt_struct() {
+        let ts = TestStruct{firstItem: "test message", secondItem: 42}
+        let pk, sk = 
+        let tse = ts.to_encrypted_bytes()
+        
+
         let ps = EncryptableString::from("This is a secret message.")
         let 
     }

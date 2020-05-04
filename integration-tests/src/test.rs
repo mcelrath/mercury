@@ -18,23 +18,6 @@ mod tests {
     #[test]
     fn test_session_init() {
         spawn_server();
-        let client_shim = ClientShim::new("http://localhost:8000".to_string(), None);
-        let res = client_lib::state_entity::deposit::session_init(&client_shim);
-        assert!(res.is_ok());
-        println!("ID: {}",res.unwrap());
-    }
-
-    #[test]
-    fn test_failed_auth() {
-        spawn_server();
-        let client_shim = ClientShim::new("http://localhost:8000".to_string(), None);
-        if let Err(e) = ecdsa::get_master_key(&"Invalid id".to_string(), &client_shim) {
-            assert_eq!(e.to_string(),"State Entity Error: User authorisation failed".to_string());
-        }
-    }
-
-    #[test]
-        spawn_server();
         let mut wallet = load_wallet();
         let res = client_lib::state_entity::deposit::session_init(&mut wallet);
         assert!(res.is_ok());
@@ -160,6 +143,6 @@ mod tests {
         )
     }
     fn load_wallet() -> Wallet {
-        Wallet::load_from(TEST_WALLET_FILENAME,&"regtest".to_string(),ClientShim::new("http://localhost:8000".to_string(), None))
+        Wallet::load_from(TEST_WALLET_FILENAME,&"regtest".to_string(),ClientShim::new("http://localhost:8000".to_string(), None)) 
     }
 }

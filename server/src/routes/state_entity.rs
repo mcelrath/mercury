@@ -3,7 +3,8 @@
 //! State Entity implementation
 
 use crate::error::SEError;
-use crate::util::{build_tx_b, generate_keypair};
+use crate::util::build_tx_b;
+use shared_lib::util::generate_keypair;
 use bitcoin::{ Address, Amount, OutPoint, TxIn };
 use bitcoin::hashes::sha256d;
 use bitcoin::util::bip143::SighashComponents;

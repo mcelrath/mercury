@@ -46,13 +46,15 @@ extern crate serde_dynamodb;
 
 extern crate hex;
 
+extern crate shared_lib;
+
 pub mod auth;
 pub mod routes;
 pub mod server;
 pub mod storage;
-pub mod util;
 pub mod tests;
 pub mod error;
+pub mod util;
 
 type Result<T> = std::result::Result<T, error::SEError>;
 

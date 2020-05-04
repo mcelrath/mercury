@@ -65,7 +65,6 @@ fn _postb<T, V>(client_shim: &ClientShim, path: &str, body: T) -> Result<V>
         return Err(CError::StateEntityError(value));
     }
 
-    Ok(serde_json::from_str(value.as_str()).unwrap()
-
+    Ok(serde_json::from_str(value.as_str()).unwrap())
 
 }

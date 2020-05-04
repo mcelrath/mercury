@@ -22,37 +22,6 @@ pub const RBF: u32 = 0xffffffff - 2;
 const DUSTLIMIT: u64 = 100;
 const FEE: u64 = 1000;
 
-
-pub fn reverse_hex_str(hex_str: String) -> Result<String> {
-    if hex_str.len() % 2 != 0 {
-        return Err(SEError::SigningError(String::from("Invalid sig hash - Odd number of characters.")))
-    }
-    let mut hex_str = hex_str.chars().rev().collect::<String>();
-    let mut result = String::with_capacity(hex_str.len());
-    unsafe {
-        let hex_vec = hex_str.as_mut_vec();
-        for i in (0..hex_vec.len()).step_by(2) {
-            result.push(char::from(hex_vec[i+1]));
-            result.push(char::from(hex_vec[i]));
-        }
-    }
-    Ok(result)
-}
-
-/// generate bitcoin::util::key key pair
-pub fn generate_keypair() -> (util::key::PrivateKey, util::key::PublicKey) {
-    let secp = Secp256k1::new();
-    let mut rng = OsRng::new().expect("OsRng");
-    let secret_key = SecretKey::new(&mut rng);
-    let priv_key = util::key::PrivateKey{
-        compressed: false,
-        network: NETWORK,
-        key: secret_key
-    };
-    let pub_key = util::key::PublicKey::from_private_key(&secp, &priv_key);
-    return (priv_key, pub_key)
-}
-
 /// build funding tx spending inputs to p2wpkh address P for amount A
 pub fn build_tx_0(inputs: &Vec<TxIn>, p_address: &Address, amount: &Amount) -> Result<Transaction> {
     let tx_0 = Transaction {

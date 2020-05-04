@@ -10,8 +10,9 @@
 use super::super::Result;
 use crate::routes::state_entity::{ check_user_auth, SessionData };
 use crate::routes::state_entity;
-use crate::util::reverse_hex_str;
+use shared_lib::util::reverse_hex_str;
 use crate::error::SEError;
+use shared_lib::util::UtilError;
 
 use curv::cryptographic_primitives::proofs::sigma_dlog::*;
 use curv::cryptographic_primitives::twoparty::coin_flip_optimal_rounds;
@@ -156,7 +157,7 @@ pub fn second_message(
 
     let comm_witness: party_one::CommWitness =
         db::get(&state.db, &claim.sub, &id, &EcdsaStruct::CommWitness)?
-            .ok_or(SEError::Generic(format!("No data for such identifier {}", id)))?;
+            .ok_or(UtilError::Generic(format!("No data for such identifier {}", id)))?;
     let ec_key_pair: party_one::EcKeyPair = db::get(&state.db, &claim.sub, &id, &EcdsaStruct::EcKeyPair)?
         .ok_or(SEError::Generic(format!("No data for such identifier {}", id)))?;
 
